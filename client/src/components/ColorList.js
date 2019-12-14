@@ -23,7 +23,18 @@ const ColorList = (props) => {
     // Make a put request to save your updated color
     // think about where will you get the id from...
     // where is is saved right now?
-
+    axiosWithAuth()
+      .put(`/colors/${colorToEdit.id}`, colorToEdit)
+      .then(res => {
+        console.log('saveEdit', res.data);
+        axiosWithAuth()
+          .get('/colors')
+          .then(res => {
+            props.updateColors(res.data);
+          })
+          .catch(err => console.log(err.message));
+      })
+      .catch(err => console.log(err.message));
   };
 
   const deleteColor = color => {
