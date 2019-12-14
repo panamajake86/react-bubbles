@@ -1,15 +1,18 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { axiosWithAuth } from "../axiosWithAuth";
+import { withRouter } from 'react-router-dom';
 
 const initialColor = {
   color: "",
   code: { hex: "" }
 };
 
-const ColorList = ({ colors, updateColors }) => {
-  console.log(colors);
+const ColorList = (props) => {
+  console.log('ColorList', props);
   const [editing, setEditing] = useState(false);
   const [colorToEdit, setColorToEdit] = useState(initialColor);
+  const [addColor, setAddColor] = useState(initialColor);
 
   const editColor = color => {
     setEditing(true);
@@ -21,25 +24,66 @@ const ColorList = ({ colors, updateColors }) => {
     // Make a put request to save your updated color
     // think about where will you get the id from...
     // where is is saved right now?
+    axiosWithAuth()
+      .put(`/colors/${colorToEdit.id}`, colorToEdit)
+      .then(res => {
+        console.log('saveEdit', res.data);
+        axiosWithAuth()
+          .get('/colors')
+          .then(res => {
+            props.updateColors(res.data);
+          })
+          .catch(err => console.log(err.message));
+      })
+      .catch(err => console.log(err.message));
+
   };
 
   const deleteColor = color => {
     // make a delete request to delete this color
+    axiosWithAuth()
+      .delete(`/colors/${color.id}`)
+      .then(res => {
+        console.log(res);
+        axiosWithAuth()
+          .get('/colors')
+          .then(res => {
+            props.updateColors(res.data);
+          })
+          .catch(err => console.log(err.message));
+      })
+      .catch(err => console.log(err.message));
+  };
+
+  const moreColor = e => {
+    e.preventDefault();
+    axiosWithAuth()
+    .post('/colors/', addColor)
+    .then(res => {
+      console.log('moreColor', res);
+      axiosWithAuth()
+          .get('/colors')
+          .then(res => {
+            props.updateColors(res.data);
+          })
+          .catch(err => console.log(err.message));
+    })
+    .catch(err => console.log(err.message));
   };
 
   return (
     <div className="colors-wrap">
       <p>colors</p>
       <ul>
-        {colors.map(color => (
+        {props.colors.map(color => (
           <li key={color.color} onClick={() => editColor(color)}>
             <span>
               <span className="delete" onClick={e => {
-                    e.stopPropagation();
-                    deleteColor(color)
-                  }
-                }>
-                  x
+                e.stopPropagation();
+                deleteColor(color)
+              }
+              }>
+                x
               </span>{" "}
               {color.color}
             </span>
@@ -82,8 +126,29 @@ const ColorList = ({ colors, updateColors }) => {
       )}
       <div className="spacer" />
       {/* stretch - build another form here to add a color */}
+      <h3>Add a Color!</h3>
+      <form onSubmit={moreColor}>
+      <input
+              onChange={e =>
+                setAddColor({ ...addColor, color: e.target.value })
+              }
+              value={addColor.color}
+              placeholder='color'
+            />
+        <input
+          onChange={e =>
+            setAddColor({
+              ...addColor,
+              code: { hex: e.target.value }
+            })
+          }
+          value={addColor.code.hex}
+          placeholder='#hex'
+        />
+        <button type='submit'>Add Color</button>
+      </form>
     </div>
   );
 };
 
-export default ColorList;
+export default withRouter(ColorList);
